@@ -3,1092 +3,1257 @@ Learning project - building a responsive web dashboard
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrafficFlow Pro - Odisha</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0f1c;
-            color: #ffffff;
-            overflow-x: hidden;
-        }
-
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            background: #1a1f2e;
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            padding: 20px 0;
-            border-right: 1px solid #2d3748;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .sidebar.hidden {
-            transform: translateX(-100%);
-        }
-
-        .logo {
-            padding: 0 20px 30px;
-            border-bottom: 1px solid #2d3748;
-            margin-bottom: 30px;
-        }
-
-        .logo h2 {
-            color: #4299e1;
-            font-size: 18px;
-        }
-
-        .nav-menu {
-            list-style: none;
-        }
-
-        .nav-item {
-            margin-bottom: 5px;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: #a0aec0;
-            text-decoration: none;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background: #2d3748;
-            color: #4299e1;
-        }
-
-        .nav-icon {
-            margin-right: 12px;
-            font-size: 16px;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            min-height: 100vh;
-            background: #0f1419;
-            transition: margin-left 0.3s ease-in-out;
-        }
-
-        .main-content.expanded {
-            margin-left: 0;
-        }
-
-        .header {
-            background: #1a1f2e;
-            padding: 20px 30px;
-            border-bottom: 1px solid #2d3748;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .time {
-            color: #718096;
-            font-size: 14px;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            padding: 30px;
-        }
-
-        .metric-card {
-            background: linear-gradient(135deg, #1a202c, #2d3748);
-            border: 1px solid #2d3748;
-            border-radius: 12px;
-            padding: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #4299e1, #63b3ed);
-        }
-
-        .metric-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .metric-title {
-            color: #a0aec0;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .metric-icon {
-            color: #4299e1;
-            font-size: 20px;
-        }
-
-        .metric-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 8px;
-        }
-
-        .metric-change {
-            font-size: 12px;
-            color: #48bb78;
-        }
-
-        .metric-change.negative {
-            color: #f56565;
-        }
-
-        .status-optimal {
-            color: #48bb78;
-        }
-
-        .status-warning {
-            color: #ed8936;
-        }
-
-        .status-congested {
-            color: #f56565;
-        }
-
-        .content-section {
-            padding: 0 30px 30px;
-        }
-
-        .section-card {
-            background: #1a202c;
-            border: 1px solid #2d3748;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .section-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #2d3748;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #ffffff;
-        }
-
-        .section-subtitle {
-            color: #718096;
-            font-size: 14px;
-            margin-top: 4px;
-        }
-
-        .map-container {
-            height: 500px;
-            position: relative;
-        }
-
-        #map, #mapDetailed {
-            height: 100%;
-            width: 100%;
-        }
-
-        .controls-panel {
-            background: #2d3748;
-            padding: 20px;
-            display: none;
-        }
-
-        .controls-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .control-group {
-            background: #1a202c;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid #4a5568;
-        }
-
-        .control-label {
-            color: #a0aec0;
-            font-size: 14px;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .control-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        select, input {
-            background: #2d3748;
-            border: 1px solid #4a5568;
-            color: #ffffff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        button {
-            background: #4299e1;
-            border: none;
-            color: white;
-            padding: 10px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background: #3182ce;
-        }
-
-        .btn-danger {
-            background: #f56565;
-        }
-
-        .btn-danger:hover {
-            background: #e53e3e;
-        }
-
-        .btn-success {
-            background: #48bb78;
-        }
-
-        .btn-success:hover {
-            background: #38a169;
-        }
-
-        .analytics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-        }
-
-        /* Adjusted styling for chart containers */
-        .chart-container {
-            background: #1a202c;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #2d3748;
-            height: 350px; /* New fixed height for charts */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        .chart-container canvas {
-            max-height: 100%;
-            max-width: 100%;
-        }
-
-        .intersection-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #1a202c;
-        }
-
-        .intersection-table th,
-        .intersection-table td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #2d3748;
-        }
-
-        .intersection-table th {
-            background: #2d3748;
-            font-weight: 600;
-            color: #a0aec0;
-            font-size: 14px;
-        }
-
-        .intersection-table td {
-            color: #ffffff;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-        }
-
-        .status-dot.green {
-            background: #48bb78;
-        }
-
-        .status-dot.yellow {
-            background: #ed8936;
-        }
-
-        .status-dot.red {
-            background: #f56565;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        .user-type-selector {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1001;
-            background: #1a202c;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #2d3748;
-        }
-
-        .alerts-panel {
-            background: #1a202c;
-            padding: 20px;
-        }
-
-        .alert-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: #2d3748;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            border-left: 4px solid #ed8936;
-        }
-
-        .alert-icon {
-            color: #ed8936;
-            margin-right: 12px;
-            font-size: 18px;
-        }
-
-        .alert-content {
-            flex: 1;
-        }
-
-        .alert-title {
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 4px;
-        }
-
-        .alert-time {
-            color: #718096;
-            font-size: 12px;
-        }
-
-        .quick-actions {
-            padding: 20px;
-            background: #1a202c;
-        }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .action-btn {
-            background: linear-gradient(135deg, #4299e1, #63b3ed);
-            border: none;
-            color: white;
-            padding: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.3s;
-            text-align: center;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NiyantranaX - Odisha Traffic Management</title>
+
+<!-- Leaflet + Chart.js -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html,body { height:100%; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #0a0f1c;
+        color: #e6eef8;
+        overflow-x: hidden;
+        -webkit-font-smoothing:antialiased;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        height: 100vh;
+        background: #111423;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1200;
+        padding: 22px 14px;
+        border-right: 1px solid rgba(255,255,255,0.03);
+    }
+    .logo { padding-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.03); margin-bottom:18px; }
+    .logo h2 { color:#2fb0ff; font-size:20px; margin-left:6px; font-weight:700; }
+    .logo .subtitle { font-size:12px; color:#9aa6b3; margin-top:6px; }
+
+    .nav-menu { list-style:none; margin-top:18px; padding-left:0; }
+    .nav-item { margin-bottom:8px; }
+    .nav-link {
+        display:flex; align-items:center; gap:10px;
+        padding:10px 12px; border-radius:8px;
+        color:#b9c7d6; text-decoration:none; cursor:pointer;
+    }
+    .nav-link:hover, .nav-link.active { background:#111827; color:#2fb0ff; border-left:4px solid #2fb0ff; padding-left:8px; }
+    .nav-icon { font-size:18px; width:26px; display:inline-block; }
+
+    /* Main content */
+    .main-content { margin-left:260px; min-height:100vh; padding-bottom:60px; transition:margin-left .2s ease; }
+    .header {
+        padding:22px 28px; border-bottom:1px solid rgba(255,255,255,0.03);
+        display:flex; justify-content:space-between; align-items:center;
+    }
+    .header h1 { font-size:28px; color:#fff; font-weight:800; }
+    .header .subtitle { color:#9aa6b3; margin-top:6px; font-size:13px; }
+
+    .time { color:#9aa6b3; font-size:13px; }
+
+    /* Cards */
+    .card {
+        background:#0f1720;
+        border-radius:12px; border:1px solid rgba(255,255,255,0.03);
+        padding:18px; box-shadow: 0 6px 18px rgba(2,6,23,0.45);
+        margin-bottom:18px;
+    }
+
+    .metrics-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:18px; margin:16px 0; }
+    .metric-card { padding:18px; border-radius:10px; background:linear-gradient(180deg,#0f1820,#101522); border:1px solid rgba(255,255,255,0.03); }
+    .metric-title { color:#9aa6b3; font-weight:600; margin-bottom:8px; }
+    .metric-value { font-weight:800; font-size:28px; }
+
+    /* Map container */
+    .map-container {
+        position:relative;
+        min-height:480px;
+        height: calc(60vh);
+        max-height:760px;
+        border-radius:10px;
+        overflow:hidden;
+    }
+    #map, #mapDetailed { width:100%; height:100%; display:block; }
+
+    .map-legend {
+        position:absolute; bottom:18px; right:18px;
+        background:rgba(10,14,20,0.85); padding:10px; border-radius:8px;
+        border:1px solid rgba(255,255,255,0.03); z-index:1500; color:#c9d9ea; font-size:13px;
+    }
+    .legend-item { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+    .legend-dot { width:12px; height:12px; border-radius:50%; }
+
+    /* Signal Control redesign */
+    .signal-grid { display:grid; grid-template-columns: 360px 1fr 280px; gap:18px; align-items:start; }
+    .signal-panel { padding:18px; border-radius:10px; background:#0f1720; border:1px solid rgba(255,255,255,0.03); }
+    .signal-panel h3 { font-size:18px; margin-bottom:12px; color:#fff; }
+    .select, select { width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:#09101a; color:#e6eef8; }
+    .status-badge { display:inline-block; padding:8px 12px; border-radius:8px; font-weight:700; color:#fff; margin-top:10px; }
+    .status-optimal { background:#18b26b; }
+    .status-warning { background:#ee8b34; }
+    .status-congested { background:#f06363; }
+
+    .signal-controls { display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+    .btn { padding:10px 14px; border-radius:8px; font-weight:700; border:none; cursor:pointer; box-shadow:0 6px 18px rgba(2,6,23,0.25); }
+    .btn-green { background:#1dbf7a; color:#04211a; }
+    .btn-red { background:#ff6b6b; color:#2b0d0d; }
+    .btn-blue { background:#3aa0ff; color:#072233; }
+    .btn-muted { background:#111827; color:#c9d9ea; border:1px solid rgba(255,255,255,0.02); }
+
+    /* Analytics grid */
+    .analytics-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:18px; margin-top:10px; }
+    .chart-card { padding:14px; border-radius:10px; background:#0f1720; border:1px solid rgba(255,255,255,0.03); min-height:290px; }
+
+    .intersection-table { width:100%; border-collapse:collapse; margin-top:12px; color:#d6e6f6; font-size:14px; }
+    .intersection-table th, .intersection-table td { padding:12px; border-bottom:1px solid rgba(255,255,255,0.03); text-align:left;}
+    .intersection-table th { color:#9aa6b3; background:transparent; font-weight:700; position:sticky; top:0; }
+
+    /* Safety Reports Styling - Fixed to match the image design */
+    .safety-reports-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px 28px;
+    }
+    
+    .safety-form {
+        background: #1a1f2e;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        color: #9aa6b3;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: #0f1720;
+        color: #e6eef8;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+    
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: #2fb0ff;
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .severity-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+    }
+    
+    .severity-btn {
+        flex: 1;
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: transparent;
+        color: #9aa6b3;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .severity-btn:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    
+    .severity-btn.selected.low {
+        background: #22c55e;
+        color: #ffffff;
+        border-color: #22c55e;
+    }
+    
+    .severity-btn.selected.medium {
+        background: #f59e0b;
+        color: #ffffff;
+        border-color: #f59e0b;
+    }
+    
+    .severity-btn.selected.high {
+        background: #ef4444;
+        color: #ffffff;
+        border-color: #ef4444;
+    }
+    
+    .submit-btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 8px;
+        border: none;
+        background: #2fb0ff;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    
+    .submit-btn:hover {
+        background: #1e90ff;
+    }
+    
+    .clear-btn {
+        background: #374151;
+        color: #d1d5db;
+        margin-left: 12px;
+        padding: 14px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    
+    .clear-btn:hover {
+        background: #4b5563;
+    }
+    
+    .recent-reports {
+        background: #1a1f2e;
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .reports-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .reports-title {
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .reports-subtitle {
+        color: #9aa6b3;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+    
+    .refresh-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: none;
+        background: #374151;
+        color: #d1d5db;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+    }
+    
+    .refresh-btn:hover {
+        background: #4b5563;
+    }
+    
+    .reports-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .report-item {
+        display: flex;
+        gap: 12px;
+        padding: 16px;
+        background: #0f1720;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        border-left: 4px solid #2fb0ff;
+    }
+    
+    .report-severity-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-top: 4px;
+        flex-shrink: 0;
+    }
+    
+    .report-content {
+        flex: 1;
+    }
+    
+    .report-title {
+        color: #ffffff;
+        font-weight: 700;
+        margin-bottom: 4px;
+        font-size: 14px;
+    }
+    
+    .report-description {
+        color: #9aa6b3;
+        font-size: 13px;
+        line-height: 1.4;
+        margin-bottom: 8px;
+    }
+    
+    .report-meta {
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    /* User type selector in top right */
+    .user-type-selector {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1300;
+    }
+    
+    .user-select {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: #1a1f2e;
+        color: #e6eef8;
+        font-size: 13px;
+    }
+
+    /* small devices */
+    @media (max-width: 980px) {
+        .signal-grid { grid-template-columns: 1fr; }
+        .analytics-grid { grid-template-columns:1fr; }
+        .main-content { margin-left:0; padding-left:16px; padding-right:16px; }
+        .sidebar { position:relative; width:100%; height:auto; }
+        .safety-reports-container { padding: 16px; }
+    }
+
+    /* utility: admin and citizen visibility */
+    .admin-only { display: initial; }
+    .citizen-only { display: none; }
+    
+    /* Ensure pages are properly positioned */
+    .page {
+        margin: 16px 28px;
+    }
+
+    /* Loading Screen Animation */
+    .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0a0f1c 0%, #111423 50%, #0f1720 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.8s ease-out;
+    }
+
+    .loading-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .logo-container {
+        position: relative;
+        margin-bottom: 40px;
+    }
+
+    .nx-logo {
+        font-family: 'Georgia', serif;
+        font-size: 180px;
+        font-weight: 900;
+        color: #2fb0ff;
+        text-shadow: 0 0 30px rgba(47, 176, 255, 0.5), 0 0 60px rgba(47, 176, 255, 0.3);
+        animation: logoReveal 2s ease-out forwards;
+        opacity: 0;
+        transform: scale(0.3);
+    }
+
+    @keyframes logoReveal {
+        0% {
+            opacity: 0;
+            transform: scale(0.3);
+        }
+        50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .logo-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(47, 176, 255, 0.3) 0%, transparent 70%);
+        transform: translate(-50%, -50%);
+        animation: glow 2s ease-in-out infinite alternate;
+        border-radius: 50%;
+    }
+
+    @keyframes glow {
+        from { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; }
+        to { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+    }
+
+    .loading-title {
+        font-size: 24px;
+        color: #9aa6b3;
+        font-weight: 600;
+        margin-top: 20px;
+        animation: titleSlide 1.5s ease-out 1s forwards;
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    @keyframes titleSlide {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .loading-subtitle {
+        font-size: 14px;
+        color: #6b7280;
+        margin-top: 10px;
+        animation: titleSlide 1.5s ease-out 1.5s forwards;
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    .loading-dots {
+        margin-top: 30px;
+        display: flex;
+        gap: 8px;
+        animation: titleSlide 1.5s ease-out 2s forwards;
+        opacity: 0;
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
+        background: #2fb0ff;
+        border-radius: 50%;
+        animation: dotPulse 1.5s infinite ease-in-out;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dotPulse {
+        0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+        40% { transform: scale(1.2); opacity: 1; }
+    }
+</style>
 </head>
 <body>
-    <div class="user-type-selector">
-        <select id="userType" onchange="switchUserType()">
-            <option value="admin">Admin (RTO Controller)</option>
-            <option value="citizen">Citizen View</option>
-        </select>
-    </div>
 
-    <div class="sidebar">
-        <div class="logo">
-            <h2>TrafficFlow Pro</h2>
+<!-- Loading Screen -->
+<div class="loading-screen" id="loadingScreen">
+    <div class="logo-container">
+        <div class="logo-glow"></div>
+        <div class="nx-logo">NX</div>
+    </div>
+    <div class="loading-title">NiyantranaX</div>
+    <div class="loading-subtitle">Odisha Traffic Management</div>
+    <div class="loading-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+</div>
+
+<!-- User Type Selector -->
+<div class="user-type-selector">
+    <select id="userType" class="user-select" onchange="switchUserType()">
+        <option value="admin">Admin (RTO Controller)</option>
+        <option value="citizen">Citizen View</option>
+    </select>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="logo">
+        <h2>NiyantranaX</h2>
+        <div class="subtitle">Odisha Traffic Management</div>
+    </div>
+    <ul class="nav-menu">
+        <li class="nav-item">
+            <a class="nav-link active" onclick="showPage('overview', event)">
+                <span class="nav-icon">📊</span>Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" onclick="showPage('traffic-map', event)">
+                <span class="nav-icon">🗺️</span>Traffic Map
+            </a>
+        </li>
+        <li class="nav-item admin-only">
+            <a class="nav-link" onclick="showPage('analytics', event)">
+                <span class="nav-icon">📈</span>Analytics
+            </a>
+        </li>
+        <li class="nav-item admin-only">
+            <a class="nav-link" onclick="showPage('signal-control', event)">
+                <span class="nav-icon">🚦</span>Signal Control
+            </a>
+        </li>
+        <li class="nav-item admin-only">
+            <a class="nav-link" onclick="showPage('alerts', event)">
+                <span class="nav-icon">⚠️</span>Alerts
+            </a>
+        </li>
+        <li class="nav-item admin-only">
+            <a class="nav-link" onclick="showPage('reports', event)">
+                <span class="nav-icon">📋</span>Reports
+            </a>
+        </li>
+
+        <!-- Safety Reports nav visible only in citizen view -->
+        <li class="nav-item citizen-only">
+            <a class="nav-link" onclick="showPage('safety-reports', event)">
+                <span class="nav-icon">🚨</span>Safety Reports
+            </a>
+        </li>
+    </ul>
+</div>
+
+<!-- Main content -->
+<div class="main-content" id="mainContent">
+    <div class="header">
+        <div>
+            <h1>Traffic Control Center</h1>
+            <div class="subtitle">Real-time intersection monitoring and control - Odisha</div>
         </div>
-        <ul class="nav-menu">
-            <li class="nav-item">
-                <a class="nav-link active" onclick="showPage('overview', event)">
-                    <span class="nav-icon"> 📊 </span>Overview
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" onclick="showPage('traffic-map', event)">
-                    <span class="nav-icon"> 🗺️ </span>Traffic Map
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" onclick="showPage('analytics', event)">
-                    <span class="nav-icon"> 📈 </span>Analytics
-                </a>
-            </li>
-            <li class="nav-item admin-only">
-                <a class="nav-link" onclick="showPage('signal-control', event)">
-                    <span class="nav-icon"> 🚦 </span>Signal Control
-                </a>
-            </li>
-            <li class="nav-item admin-only">
-                <a class="nav-link" onclick="showPage('alerts', event)">
-                    <span class="nav-icon"> ⚠️ </span>Alerts
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" onclick="showPage('reports', event)">
-                    <span class="nav-icon"> 📋 </span>Reports
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="main-content">
-        <div class="header">
-            <div>
-                <h1>Traffic Control Center</h1>
-                <p class="section-subtitle">Real-time intersection monitoring and control - Odisha</p>
-            </div>
+        <div style="display:flex; gap:18px; align-items:center;">
             <div class="time" id="currentTime"></div>
         </div>
+    </div>
 
-        <div id="overview" class="page active">
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-header">
-                        <span class="metric-title">Traffic Efficiency</span>
-                        <span class="metric-icon"> 📈 </span>
-                    </div>
-                    <div class="metric-value" id="trafficEfficiency">88.9%</div>
-                    <div class="metric-change">+2.4% from last hour</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-header">
-                        <span class="metric-title">Active Signals</span>
-                        <span class="metric-icon"> 📍 </span>
-                    </div>
-                    <div class="metric-value"><span id="activeSignals">48</span>/50</div>
-                    <div class="metric-change">2 signals in maintenance mode</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-header">
-                        <span class="metric-title">Avg Commute Time</span>
-                        <span class="metric-icon"> ⏱️ </span>
-                    </div>
-                    <div class="metric-value" id="avgCommute">22.8</div>
-                    <div class="metric-change">-10.2% reduction achieved</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-header">
-                        <span class="metric-title">System Status</span>
-                        <span class="metric-icon"> 🔧 </span>
-                    </div>
-                    <div class="metric-value status-optimal">Optimal</div>
-                    <div class="metric-change">All systems operational</div>
-                </div>
+    <!-- Overview -->
+    <div id="overview" class="card page active">
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Traffic Efficiency</div>
+                <div class="metric-value" id="trafficEfficiency">--%</div>
+                <div style="color:#8ad9a6; font-size:13px; margin-top:6px;">↑ +2.4% from last hour</div>
             </div>
-
-            <div class="content-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <div>
-                            <h3 class="section-title">Real-time Traffic Map</h3>
-                            <p class="section-subtitle">Live traffic conditions across Odisha intersections</p>
-                        </div>
-                    </div>
-                    <div class="map-container">
-                        <div id="map"></div>
-                    </div>
-                </div>
+            <div class="metric-card">
+                <div class="metric-title">Active Signals</div>
+                <div class="metric-value"><span id="activeSignals">--</span>/50</div>
+                <div style="color:#9aa6b3; font-size:13px; margin-top:6px;">2 signals in maintenance</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Avg Wait Time</div>
+                <div class="metric-value" id="avgWaitTime">-- min</div>
+                <div style="color:#9aa6b3; font-size:13px; margin-top:6px;">↓ -10.2% reduction</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">System Status</div>
+                <div id="systemStatus" class="metric-value">--</div>
+                <div style="color:#9aa6b3; font-size:13px; margin-top:6px;">All systems operational</div>
             </div>
         </div>
 
-        <div id="traffic-map" class="page">
-            <div class="content-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <div>
-                            <h3 class="section-title">Interactive Traffic Map</h3>
-                            <p class="section-subtitle">Detailed view of all intersections in Odisha</p>
-                        </div>
-                    </div>
-                    <div class="map-container" style="height: 70vh;">
-                        <div id="mapDetailed"></div>
-                    </div>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                    <h3 style="margin-bottom:4px;">Real-time Traffic Map</h3>
+                    <div style="color:#98aabf; font-size:13px;">Live traffic conditions across major Odisha intersections</div>
                 </div>
+                <div><button class="btn btn-muted" onclick="refreshMap()">🔄 Refresh</button></div>
             </div>
-        </div>
-
-        <div id="analytics" class="page">
-            <div class="content-section">
-                <div class="analytics-grid">
-                    <div class="chart-container">
-                        <h4>Average Waiting Time</h4>
-                        <canvas id="waitingTimeChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Queue Length Analysis</h4>
-                        <canvas id="queueLengthChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Traffic Flow Trends</h4>
-                        <canvas id="trafficFlowChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Intersection Performance</h4>
-                        <canvas id="performanceChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3 class="section-title">Intersection Statistics</h3>
-                    </div>
-                    <table class="intersection-table">
-                        <thead>
-                            <tr>
-                                <th>Intersection</th>
-                                <th>Status</th>
-                                <th>Avg Wait Time</th>
-                                <th>Queue Length</th>
-                                <th>Efficiency</th>
-                                <th>Last Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody id="intersectionTableBody">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="signal-control" class="page">
-            <div class="content-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3 class="section-title">Manual Signal Control</h3>
-                        <p class="section-subtitle">Override automatic signals for emergency or maintenance</p>
-                    </div>
-                    <div class="controls-panel" style="display: block;">
-                        <div class="controls-grid">
-                            <div class="control-group">
-                                <div class="control-label">Select Intersection</div>
-                                <select id="intersectionSelect" onchange="updateSignalStatus()">
-                                    <option value="">Choose intersection...</option>
-                                </select>
-                                <div id="currentSignalStatus" style="margin-top: 10px; padding: 10px; background: #2d3748; border-radius: 6px;">
-                                    <strong>Current Status:</strong> <span id="signalStatusText">Select an intersection</span>
-                                </div>
-                            </div>
-                            <div class="control-group">
-                                <div class="control-label">Manual Override</div>
-                                <div class="control-row">
-                                    <button class="btn-success" onclick="forceSignal('green')">Force Green</button>
-                                    <button class="btn-danger" onclick="forceSignal('red')">Force Red</button>
-                                    <button onclick="resetSignal()">Auto Mode</button>
-                                </div>
-                                <div class="control-row">
-                                    <label>Duration (seconds):</label>
-                                    <input type="number" id="signalDuration" value="30" min="5" max="300" style="width: 80px;">
-                                </div>
-                            </div>
-                            <div class="control-group">
-                                <div class="control-label">Emergency Controls</div>
-                                <div class="control-row">
-                                    <button class="btn-danger" onclick="emergencyOverride()"> 🚨 Emergency Override</button>
-                                </div>
-                                <div class="control-row">
-                                    <button onclick="maintenanceMode()"> 🔧 Maintenance Mode</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="alerts" class="page">
-            <div class="content-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3 class="section-title"> ⚠️ System Alerts</h3>
-                    </div>
-                    <div class="alerts-panel">
-                        <div class="alert-item">
-                            <div class="alert-icon"> 🔴 </div>
-                            <div class="alert-content">
-                                <div class="alert-title">Heavy traffic detected on Broadway corridor</div>
-                                <div class="alert-time">2 min ago</div>
-                            </div>
-                        </div>
-                        <div class="alert-item">
-                            <div class="alert-icon"> 🔵 </div>
-                            <div class="alert-content">
-                                <div class="alert-title">Signal timing optimized for rush hour</div>
-                                <div class="alert-time">15 min ago</div>
-                            </div>
-                        </div>
-                        <div class="alert-item">
-                            <div class="alert-icon"> 🟢 </div>
-                            <div class="alert-content">
-                                <div class="alert-title">New efficiency record: 94% at Center St</div>
-                                <div class="alert-time">1 hour ago</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3 class="section-title">Quick Actions</h3>
-                    </div>
-                    <div class="quick-actions">
-                        <div class="action-grid">
-                            <button class="action-btn" onclick="emergencyOverride()"> ⚡ Emergency Override</button>
-                            <button class="action-btn" onclick="optimizeAll()"> ⚙️ Optimize All Signals</button>
-                            <button class="action-btn" onclick="generateReport()"> 📊 Generate Report</button>
-                            <button class="action-btn" onclick="maintenanceMode()"> 🔧 Maintenance Mode</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="reports" class="page">
-            <div class="content-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3 class="section-title">Traffic Reports</h3>
-                        <button onclick="generateReport()">Generate New Report</button>
-                    </div>
-                    <div class="analytics-grid">
-                        <div class="chart-container">
-                            <h4>Daily Traffic Summary</h4>
-                            <canvas id="dailySummaryChart"></canvas>
-                        </div>
-                        <div class="chart-container">
-                            <h4>Weekly Performance</h4>
-                            <canvas id="weeklyChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="section-card" style="margin-top: 20px;">
-                        <div class="section-header">
-                            <h3 class="section-title">Report Logs</h3>
-                        </div>
-                        <div style="padding: 24px;">
-                            <ul style="list-style-type: disc; padding-left: 20px; color: #a0aec0;">
-                                <li style="margin-bottom: 8px;">Weekly Report - Sep 1, 2025: Generated successfully.</li>
-                                <li style="margin-bottom: 8px;">Daily Report - Aug 30, 2025: Generated successfully.</li>
-                                <li style="margin-bottom: 8px;">Congestion Report - Aug 28, 2025: Generated successfully.</li>
-                                <li style="margin-bottom: 8px;">Emergency Override Log - Aug 25, 2025: Generated successfully.</li>
-                            </ul>
-                        </div>
-                    </div>
+            <div class="map-container" id="overviewMapWrap"><div id="map"></div>
+                <div class="map-legend">
+                    <div class="legend-item"><div class="legend-dot" style="background:#18b26b"></div><div>Optimal Flow</div></div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#ee8b34"></div><div>Moderate Traffic</div></div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#f06363"></div><div>Heavy Congestion</div></div>
                 </div>
             </div>
         </div>
     </div>
-    <script>
-        // Global variables
-        let map, mapDetailed;
-        let intersections = [];
-        let trafficData = {};
-        let roadSegments = {};
-        let currentUserType = 'admin';
-        let signalOverrides = {};
-        let chartInstances = {};
 
-        // Data for the map and analytics
-        const intersectionData = [
-            { id: 'bhubaneswar-main', name: 'Bhubaneswar Main', location: [20.2713, 85.8453], status: 'optimal', avgWaitTime: 120, queueLength: 5 },
-            { id: 'cuttack-junction', name: 'Cuttack Junction', location: [20.4625, 85.8828], status: 'warning', avgWaitTime: 250, queueLength: 15 },
-            { id: 'rourkela-square', name: 'Rourkela Square', location: [22.2583, 84.8760], status: 'congested', avgWaitTime: 400, queueLength: 30 },
-            { id: 'puri-signal', name: 'Puri Signal', location: [19.8049, 85.8272], status: 'optimal', avgWaitTime: 90, queueLength: 3 },
-            { id: 'konark-highway', name: 'Konark Highway', location: [19.8876, 86.0943], status: 'optimal', avgWaitTime: 110, queueLength: 6 }
+    <!-- Traffic Map Page (always available) -->
+    <div id="traffic-map" class="card page" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div>
+                <h3 style="margin-bottom:4px;">Interactive Traffic Map</h3>
+                <div style="color:#98aabf; font-size:13px;">Detailed view of all intersections in Odisha</div>
+            </div>
+            <div><button class="btn btn-muted" onclick="refreshDetailedMap()">🔄 Refresh</button></div>
+        </div>
+        <div class="map-container" id="detailedMapWrap"><div id="mapDetailed"></div>
+            <div class="map-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#18b26b"></div><div>Optimal Flow</div></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ee8b34"></div><div>Moderate Traffic</div></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f06363"></div><div>Heavy Congestion</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics (admin only) -->
+    <div id="analytics" class="card page admin-only" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px;">
+            <div>
+                <h2 style="font-size:20px;color:#fff;margin-bottom:6px;">Analytics</h2>
+                <div style="color:#9aa6b3;">Detailed charts and intersection performance</div>
+            </div>
+            <div><button class="btn btn-muted" onclick="exportStats()">Generate Report</button></div>
+        </div>
+
+        <div class="analytics-grid">
+            <div class="chart-card"><h4 style="color:#fff;margin-bottom:8px;">Average Waiting Time</h4><canvas id="waitingTimeChart"></canvas></div>
+            <div class="chart-card"><h4 style="color:#fff;margin-bottom:8px;">Queue Length Analysis</h4><canvas id="queueLengthChart"></canvas></div>
+            <div class="chart-card"><h4 style="color:#fff;margin-bottom:8px;">Traffic Flow Trends</h4><canvas id="trafficFlowChart"></canvas></div>
+            <div class="chart-card"><h4 style="color:#fff;margin-bottom:8px;">Intersection Performance</h4><canvas id="performanceChart"></canvas></div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight:800; font-size:16px; color:#fff;">Intersection Statistics</div>
+                <div><button class="btn btn-muted" onclick="exportStats()">📥 Export CSV</button></div>
+            </div>
+            <div style="margin-top:12px; overflow:auto;">
+                <table class="intersection-table" id="intersectionTable">
+                    <thead>
+                        <tr><th>Intersection</th><th>Location</th><th>Avg Wait (s)</th><th>Queue</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="intersectionTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signal Control (admin only) -->
+    <div id="signal-control" class="card page admin-only" style="display:none;">
+        <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div><h2 style="margin:0;color:#fff;">Manual Signal Control</h2><div style="color:#98aabf;font-size:13px;">Override automatic signals for emergency or maintenance</div></div>
+            <div style="color:#98aabf;font-size:13px;">Note: demo actions only</div>
+        </div>
+        <div class="signal-grid">
+            <div class="signal-panel">
+                <h3>Select Intersection</h3>
+                <select id="intersectionSelect" class="select"></select>
+                <div style="margin-top:12px; color:#9aa6b3;">Current Status:</div>
+                <div id="selectedStatus" class="status-badge status-optimal">Optimal</div>
+            </div>
+
+            <div class="signal-panel">
+                <h3>Manual Override</h3>
+                <div class="signal-controls">
+                    <button class="btn btn-green" onclick="forceGreen()">Force Green</button>
+                    <button class="btn btn-red" onclick="forceRed()">Force Red</button>
+                    <button class="btn btn-blue" onclick="setAutoMode()">Auto Mode</button>
+                    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                        <div style="color:#9aa6b3;">Duration (s):</div>
+                        <input id="overrideDuration" type="number" min="5" value="30" style="width:84px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:#08101a;color:#e6eef8;">
+                    </div>
+                </div>
+                <div class="signal-help" style="color:#98aabf; font-size:13px; margin-top:8px;">Force commands temporarily override signal timings.</div>
+            </div>
+
+            <div class="signal-panel">
+                <h3>Emergency Controls</h3>
+                <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+                    <button class="btn btn-red" onclick="emergencyOverride()">🚨 Emergency Override</button>
+                    <button class="btn btn-blue" onclick="maintenanceMode()">🔧 Maintenance Mode</button>
+                </div>
+                <div style="margin-top:12px;color:#9aa6b3;">Emergency override prioritizes emergency vehicle passage.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts (admin only) -->
+    <div id="alerts" class="card page admin-only" style="display:none;">
+        <h3>Active Alerts</h3>
+        <div id="alertsPanel" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Reports (admin only) -->
+    <div id="reports" class="card page admin-only" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div><h3 style="margin:0;color:#fff;">Traffic Reports</h3><div style="color:#98aabf;font-size:13px;">Daily and weekly summaries</div></div>
+            <div><button class="btn btn-muted" onclick="generateReport()">Generate New Report</button></div>
+        </div>
+
+        <div style="display:flex; gap:16px; margin-top:12px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:360px;">
+                <h4 style="color:#fff;">Daily Traffic Summary</h4>
+                <canvas id="reportsDailyChart" style="width:100%;height:220px;"></canvas>
+            </div>
+            <div style="flex:1; min-width:360px;">
+                <h4 style="color:#fff;">Weekly Performance</h4>
+                <canvas id="reportsWeeklyChart" style="width:100%;height:220px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Safety Reports (citizen only) - Fixed to match image design exactly -->
+    <div id="safety-reports" class="page citizen-only" style="display:none;">
+        <div class="safety-reports-container">
+            <!-- Safety Report Form -->
+            <div class="safety-form">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #ffffff; margin: 0; margin-bottom: 8px;">Report Safety Issues</h3>
+                    <p style="color: #9aa6b3; font-size: 13px; margin: 0;">Help fellow travelers by reporting road conditions and hazards</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Type of Issue</label>
+                    <select id="issueType" class="form-select">
+                        <option value="">Select issue type...</option>
+                        <option value="🚗 Traffic Accident">🚗 Traffic Accident</option>
+                        <option value="🔧 Vehicle Breakdown">🔧 Vehicle Breakdown</option>
+                        <option value="🚧 Road Block/Construction">🚧 Road Block/Construction</option>
+                        <option value="🌧️ Weather Hazard">🌧️ Weather Hazard</option>
+                        <option value="🚦 Heavy Traffic/Congestion">🚦 Heavy Traffic/Congestion</option>
+                        <option value="🚑 Emergency Vehicle">🚑 Emergency Vehicle</option>
+                        <option value="❗ Other Hazard">❗ Other Hazard</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input id="issueLocation" type="text" class="form-input" placeholder="Enter location or intersection name">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Severity Level</label>
+                    <div class="severity-buttons">
+                        <button type="button" id="sevLow" class="severity-btn" onclick="selectSeverity('low', this)">
+                            🟢 Low
+                        </button>
+                        <button type="button" id="sevMed" class="severity-btn" onclick="selectSeverity('medium', this)">
+                            🟡 Medium
+                        </button>
+                        <button type="button" id="sevHigh" class="severity-btn" onclick="selectSeverity('high', this)">
+                            🔴 High
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="issueDescription" class="form-textarea" placeholder="Provide details about the situation to help other travelers..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button class="submit-btn" onclick="submitSafetyReport()">Submit Safety Report</button>
+                    <button class="clear-btn" onclick="clearSafetyForm()">Clear</button>
+                </div>
+            </div>
+            
+            <!-- Recent Safety Reports -->
+            <div class="recent-reports">
+                <div class="reports-header">
+                    <div>
+                        <h4 class="reports-title">Recent Safety Reports</h4>
+                        <p class="reports-subtitle">Community-reported road conditions and hazards</p>
+                    </div>
+                    <button class="refresh-btn" onclick="refreshReports()">🔄 Refresh</button>
+                </div>
+                
+                <div class="reports-list" id="safetyReportsList">
+                    <!-- Reports will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* ============================
+   Demo data & state
+   ============================ */
+const intersections = [
+    { id:'ODI-001', name:'Patia Chowk', lat:20.2961, lng:85.8245, avgWait:45, queue:12, status:'optimal' },
+    { id:'ODI-002', name:'Bisra Chowk', lat:20.2656, lng:85.8402, avgWait:77, queue:8, status:'optimal' },
+    { id:'ODI-003', name:'Trishakti madir Chowk', lat:20.2510, lng:85.8316, avgWait:90, queue:15, status:'congested' },
+    { id:'ODI-004', name:'Madhupatna Chowk', lat:20.3270, lng:85.8330, avgWait:38, queue:6, status:'optimal' },
+    { id:'ODI-005', name:'Panposh Chowk', lat:20.3140, lng:85.8530, avgWait:60, queue:10, status:'moderate' }
+];
+
+let alerts = [
+    { id:1, title:'Signal Controller Offline (ODI-003)', severity:'high', desc:'Controller not responding', time: new Date(Date.now()-1000*60*55).toISOString() },
+    { id:2, title:'Planned Maintenance ODI-002', severity:'medium', desc:'Maintenance window 10:00-12:00', time: new Date(Date.now()-1000*60*60*6).toISOString() }
+];
+
+// Safety reports stored in memory instead of localStorage
+let safetyReports = [
+    {
+        id: 1,
+        type: '🚧 Road Block/Construction',
+        location: 'Patia Chowk',
+        severity: 'medium',
+        descr: 'Road construction work blocking the left lane. Traffic is being diverted to the right lane causing delays.',
+        time: new Date(Date.now() - 1000 * 60 * 30).toISOString()
+    },
+    {
+        id: 2,
+        type: '🚗 Traffic Accident',
+        location: 'Madhupatna Chowk',
+        severity: 'high',
+        descr: 'Minor collision between two vehicles. Emergency services on site. Avoid this route if possible.',
+        time: new Date(Date.now() - 1000 * 60 * 120).toISOString()
+    },
+    {
+        id: 3,
+        type: '🌧️ Weather Hazard',
+        location: 'Bisra Chowk',
+        severity: 'low',
+        descr: 'Road surface wet due to recent rainfall. Drive carefully and maintain safe distance.',
+        time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
+    }
+];
+
+/* ============================
+   Page nav & admin/citizen toggle
+   ============================ */
+const pages = document.querySelectorAll('.page');
+const navLinks = document.querySelectorAll('.nav-link');
+function showPage(id, e) {
+    pages.forEach(p => p.style.display = 'none');
+    const page = document.getElementById(id);
+    if (page) page.style.display = 'block';
+    navLinks.forEach(n => n.classList.remove('active'));
+    if (e && e.currentTarget) e.currentTarget.classList.add('active');
+    if (id === 'traffic-map' || id === 'overview') {
+        setTimeout(()=> { if (map) map.invalidateSize(); if (mapDetailed) mapDetailed.invalidateSize(); }, 220);
+    }
+}
+
+function switchUserType() {
+    const mode = document.getElementById('userType').value;
+    if (mode === 'citizen') {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.citizen-only').forEach(el => el.style.display = 'block');
+        // Clear all nav active states first
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        // Find and activate the overview nav link (dashboard)
+        const overviewNavLink = document.querySelector('.nav-link[onclick*="overview"]');
+        if (overviewNavLink) overviewNavLink.classList.add('active');
+        showPage('overview');
+    } else {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        document.querySelectorAll('.citizen-only').forEach(el => el.style.display = 'none');
+        // Clear all nav active states first
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        // Find and activate the overview nav link
+        const overviewNavLink = document.querySelector('.nav-link[onclick*="overview"]');
+        if (overviewNavLink) overviewNavLink.classList.add('active');
+        showPage('overview');
+    }
+}
+
+/* ============================
+   Leaflet maps
+   ============================ */
+let map, mapDetailed, markers = [];
+function initMaps() {
+    map = L.map('map', { zoomControl: true }).setView([20.2961,85.8245], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    mapDetailed = L.map('mapDetailed', { zoomControl: true }).setView([20.2961,85.8245], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapDetailed);
+
+    drawIntersections();
+}
+
+function drawIntersections() {
+    markers.forEach(m => {
+        try { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); } catch(e){}
+        try { if (mapDetailed.hasLayer(m.marker2)) mapDetailed.removeLayer(m.marker2); } catch(e){}
+    });
+    markers = [];
+
+    intersections.forEach(i => {
+        const color = i.status === 'optimal' ? '#18b26b' : (i.status === 'moderate' ? '#ee8b34' : '#f06363');
+        const popup = `<strong>${i.name}</strong><br/>Avg Wait: ${i.avgWait}s<br/>Queue: ${i.queue}`;
+        const circle = L.circleMarker([i.lat, i.lng], { radius: Math.max(6, Math.min(20, Math.round(i.queue/1.5))), color, fillColor: color, fillOpacity: 0.8 })
+            .bindPopup(popup)
+            .addTo(map);
+        const circle2 = L.circleMarker([i.lat, i.lng], { radius: Math.max(6, Math.min(20, Math.round(i.queue/1.5))), color, fillColor: color, fillOpacity: 0.8 })
+            .bindPopup(popup + '<br/><em>Detailed</em>')
+            .addTo(mapDetailed);
+        markers.push({ marker: circle, marker2: circle2 });
+    });
+}
+
+function refreshMap() {
+    intersections.forEach(i => {
+        i.avgWait = Math.max(8, Math.round(i.avgWait + (Math.random()-0.5)*8));
+        i.queue = Math.max(1, Math.round(i.queue + Math.round((Math.random()-0.5)*4)));
+        i.status = i.queue > 12 ? 'congested' : (i.queue > 8 ? 'moderate' : 'optimal');
+    });
+    drawIntersections(); updateIntersectionTable(); refreshMetricsFromIntersections();
+}
+function refreshDetailedMap() {
+    refreshMap();
+    const latlngs = intersections.map(i => [i.lat, i.lng]);
+    if (latlngs.length) mapDetailed.fitBounds(latlngs, { padding:[40,40] });
+}
+
+window.addEventListener('resize', ()=> {
+    setTimeout(()=> { if (map) map.invalidateSize(); if (mapDetailed) mapDetailed.invalidateSize(); }, 120);
+});
+
+/* ============================
+   Charts
+   ============================ */
+let waitingTimeChart, queueLengthChart, trafficFlowChart, performanceChart, reportsDailyChart, reportsWeeklyChart;
+function initCharts() {
+    const wtCtx = document.getElementById('waitingTimeChart').getContext('2d');
+    waitingTimeChart = new Chart(wtCtx, {
+        type: 'line',
+        data: { labels: ['6 AM','9 AM','12 PM','3 PM','6 PM','9 PM'], datasets:[{ label:'Avg Wait (s)', data:[45,77,52,64,88,44], tension:0.35, borderWidth:3, borderColor:'#3aa0ff', pointBackgroundColor:'#fff', fill:false }] },
+        options: { responsive:true, plugins:{ legend:{ display:true } }, scales:{ x:{ ticks:{ color:'#9aa6b3' } }, y:{ ticks:{ color:'#9aa6b3' } } } }
+    });
+
+    const qCtx = document.getElementById('queueLengthChart').getContext('2d');
+    const qData = intersections.map(i => i.queue);
+    const qColors = intersections.map(i => i.status === 'congested' ? '#f06363' : '#18b26b');
+    queueLengthChart = new Chart(qCtx, {
+        type: 'bar',
+        data: { labels: intersections.map(i=>i.id), datasets:[{ label:'Queue (vehicles)', data:qData, backgroundColor:qColors }] },
+        options: { responsive:true, plugins:{ legend:{ display:true } }, scales:{ x:{ ticks:{ color:'#9aa6b3' } }, y:{ ticks:{ color:'#9aa6b3' } } } }
+    });
+
+    const tfCtx = document.getElementById('trafficFlowChart').getContext('2d');
+    const counts = [intersections.filter(i=>i.status==='optimal').length, intersections.filter(i=>i.status==='moderate').length, intersections.filter(i=>i.status==='congested').length];
+    trafficFlowChart = new Chart(tfCtx, {
+        type:'doughnut',
+        data:{ labels:['Optimal','Warning','Congested'], datasets:[{ data:counts, backgroundColor:['#18b26b','#ee8b34','#f06363'], hoverOffset:8 }] },
+        options:{ responsive:true, plugins:{ legend:{ position:'top' } } }
+    });
+
+    const pfCtx = document.getElementById('performanceChart').getContext('2d');
+    performanceChart = new Chart(pfCtx, {
+        type:'radar',
+        data:{ labels:['Queue Management','Response Time','Emergency Handling','Signal Uptime','Throughput'], datasets:[{ label:'Performance', data:[84,86,88,92,80], borderColor:'#2fb0ff', backgroundColor:'rgba(47,176,255,0.12)', pointBackgroundColor:'#2fb0ff' }] },
+        options:{ responsive:true, scales:{ r:{ ticks:{ color:'#9aa6b3' } } } }
+    });
+
+    const rdCtx = document.getElementById('reportsDailyChart').getContext('2d');
+    reportsDailyChart = new Chart(rdCtx, {
+        type:'line',
+        data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Efficiency %', data:[88,92,85,90,87,75,68], borderColor:'#2fbf6e', backgroundColor:'rgba(47,191,110,0.06)', tension:0.3, fill:true }] },
+        options:{ responsive:true, scales:{ x:{ ticks:{ color:'#9aa6b3' } }, y:{ ticks:{ color:'#9aa6b3' } } } }
+    });
+    const rwCtx = document.getElementById('reportsWeeklyChart').getContext('2d');
+    reportsWeeklyChart = new Chart(rwCtx, {
+        type:'bar',
+        data:{ labels:['Week 1','Week 2','Week 3','Week 4'], datasets:[{ label:'Avg Commute Time (min)', data:[25.3,23.7,22.0,22.8], backgroundColor:['#3aa0ff','#3aa0ff','#3aa0ff','#3aa0ff'] }] },
+        options:{ responsive:true, scales:{ x:{ ticks:{ color:'#9aa6b3' } }, y:{ ticks:{ color:'#9aa6b3' } } } }
+    });
+}
+
+/* ============================
+   Intersection table & metrics
+   ============================ */
+function updateIntersectionTable() {
+    const tbody = document.getElementById('intersectionTableBody');
+    tbody.innerHTML = '';
+    intersections.forEach(i => {
+        const statusClass = i.status === 'optimal' ? 'status-optimal' : (i.status === 'moderate' ? 'status-warning' : 'status-congested');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i.id} - ${i.name}</td><td>${i.lat.toFixed(4)}, ${i.lng.toFixed(4)}</td><td>${i.avgWait}</td><td>${i.queue}</td><td><span class="status-badge ${statusClass}" style="padding:6px 8px;font-weight:700;font-size:13px;">${i.status}</span></td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+function refreshMetricsFromIntersections() {
+    const score = Math.round((intersections.reduce((acc,i)=>acc + (i.status==='optimal' ? 1 : (i.status==='moderate' ? 0.75 : 0.4)),0) / intersections.length)*100);
+    document.getElementById('trafficEfficiency').innerText = `${score}%`;
+    document.getElementById('avgWaitTime').innerText = `${Math.round(intersections.reduce((s,i)=>s+i.avgWait,0)/intersections.length)} min`;
+    document.getElementById('activeSignals').innerText = `${50 - intersections.filter(i=>i.status==='congested').length}`;
+    document.getElementById('systemStatus').innerText = intersections.some(i=>i.status==='congested') ? 'Degraded' : 'Optimal';
+
+    if (queueLengthChart) {
+        queueLengthChart.data.datasets[0].data = intersections.map(i=>i.queue);
+        queueLengthChart.data.datasets[0].backgroundColor = intersections.map(i => i.status==='congested' ? '#f06363' : '#18b26b');
+        queueLengthChart.update();
+    }
+    if (trafficFlowChart) {
+        trafficFlowChart.data.datasets[0].data = [
+            intersections.filter(i=>i.status==='optimal').length,
+            intersections.filter(i=>i.status==='moderate').length,
+            intersections.filter(i=>i.status==='congested').length
         ];
+        trafficFlowChart.update();
+    }
+}
 
-        // Functions for manual signal control (re-added from previous update)
-        function updateSignalStatus() {
-            const select = document.getElementById('intersectionSelect');
-            const selectedId = select.value;
-            const statusElement = document.getElementById('signalStatusText');
+/* ============================
+   Alerts rendering
+   ============================ */
+function renderAlerts() {
+    const panel = document.getElementById('alertsPanel');
+    panel.innerHTML = '';
+    if (!alerts.length) panel.innerHTML = '<div style="color:#9aa6b3;padding:12px;">No active alerts</div>';
+    alerts.forEach(a => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.marginBottom = '10px';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><strong style="color:#fff">${a.title}</strong><div style="color:#9aa6b3;font-size:13px;margin-top:6px">${a.desc}</div></div>
+            <div style="color:#9aa6b3;font-size:13px">${timeAgo(a.time)}</div>
+        </div>`;
+        panel.appendChild(el);
+    });
+}
 
-            if (selectedId) {
-                const intersection = intersectionData.find(i => i.id === selectedId);
-                const currentStatus = signalOverrides[selectedId] || intersection.status;
-                const statusMap = {
-                    'optimal': 'Auto-optimized (Green)',
-                    'warning': 'Congested (Yellow)',
-                    'congested': 'Heavy Traffic (Red)',
-                    'green': 'Manual Override (Green)',
-                    'red': 'Manual Override (Red)',
-                    'maintenance': 'Maintenance Mode'
-                };
-                statusElement.textContent = statusMap[currentStatus];
-                statusElement.className = '';
-                statusElement.classList.add('status-' + currentStatus);
-            } else {
-                statusElement.textContent = 'Select an intersection';
-            }
-        }
+/* ============================
+   Signal control demo actions
+   ============================ */
+function populateIntersectionSelect() {
+    const sel = document.getElementById('intersectionSelect');
+    sel.innerHTML = '';
+    intersections.forEach(i => {
+        const op = document.createElement('option'); op.value = i.id; op.textContent = `${i.id} - ${i.name}`;
+        sel.appendChild(op);
+    });
+    sel.addEventListener('change', ()=> updateSelectedStatus(sel.value));
+    updateSelectedStatus(sel.value || intersections[0].id);
+}
+function updateSelectedStatus(id) {
+    const i = intersections.find(x => x.id === id) || intersections[0];
+    const el = document.getElementById('selectedStatus');
+    el.className = 'status-badge ' + (i.status==='optimal' ? 'status-optimal' : (i.status==='moderate' ? 'status-warning' : 'status-congested'));
+    el.innerText = `${i.status.charAt(0).toUpperCase() + i.status.slice(1)} (${i.queue})`;
+}
+function forceGreen() {
+    const sel = document.getElementById('intersectionSelect');
+    const id = sel.value; const dur = Number(document.getElementById('overrideDuration').value) || 30;
+    const i = intersections.find(x=>x.id===id);
+    if (i) { i.queue = Math.max(1, i.queue - Math.round(Math.random()*8)); i.avgWait = Math.max(5, i.avgWait - Math.round(Math.random()*12)); i.status='optimal'; }
+    drawIntersections(); updateIntersectionTable(); refreshMetricsFromIntersections(); updateSelectedStatus(id);
+    alerts.unshift({ id:Date.now(), title:`Force Green at ${id}`, severity:'low', desc:`Applied for ${dur}s`, time:new Date().toISOString() });
+    renderAlerts();
+    alert(`Force Green applied to ${id} for ${dur}s (demo).`);
+}
+function forceRed() {
+    const sel = document.getElementById('intersectionSelect'); const id = sel.value;
+    const i = intersections.find(x=>x.id===id);
+    if (i) { i.queue += Math.round(Math.random()*6); i.avgWait += Math.round(Math.random()*10); i.status='congested'; }
+    drawIntersections(); updateIntersectionTable(); refreshMetricsFromIntersections(); updateSelectedStatus(id);
+    alerts.unshift({ id:Date.now(), title:`Force Red at ${id}`, severity:'high', desc:`Applied immediately`, time:new Date().toISOString() });
+    renderAlerts();
+    alert(`Force Red applied to ${id} (demo).`);
+}
+function setAutoMode() {
+    intersections.forEach(i => { if (i.queue < 12) i.status='optimal'; else if (i.queue < 16) i.status='moderate'; else i.status='congested'; });
+    drawIntersections(); updateIntersectionTable(); refreshMetricsFromIntersections();
+    alert('Auto mode restored (demo).');
+}
+function emergencyOverride() {
+    intersections.forEach(i => { if (i.status==='congested') { i.queue = Math.max(2, i.queue - 12); i.avgWait = Math.max(5, i.avgWait - 18); i.status='moderate'; }});
+    drawIntersections(); updateIntersectionTable(); refreshMetricsFromIntersections();
+    alerts.unshift({ id:Date.now(), title:'Emergency Override executed', severity:'high', desc:'Emergency override reduced congested queues', time:new Date().toISOString() });
+    renderAlerts();
+    alert('Emergency override executed (demo).');
+}
+function maintenanceMode() {
+    alerts.unshift({ id:Date.now(), title:'Maintenance Mode enabled', severity:'medium', desc:'Selected signals placed into maintenance', time:new Date().toISOString() });
+    renderAlerts();
+    alert('Maintenance mode enabled (demo).');
+}
 
-        function forceSignal(color) {
-            const select = document.getElementById('intersectionSelect');
-            const selectedId = select.value;
-            const duration = document.getElementById('signalDuration').value;
-            if (selectedId) {
-                signalOverrides[selectedId] = color;
-                alert(`Forcing ${color} signal at ${selectedId} for ${duration} seconds.`);
-                updateSignalStatus();
-            } else {
-                alert('Please select an intersection first.');
-            }
-        }
+/* ============================
+   Safety reports (citizen) - using memory storage
+   ============================ */
+let selectedSeverity = null;
+function selectSeverity(level, el) {
+    selectedSeverity = level;
+    document.querySelectorAll('#sevLow,#sevMed,#sevHigh').forEach(b => b.classList.remove('selected','low','medium','high'));
+    if (el) el.classList.add('selected', level);
+}
+function submitSafetyReport() {
+    const type = document.getElementById('issueType').value;
+    const location = document.getElementById('issueLocation').value.trim();
+    const descr = document.getElementById('issueDescription').value.trim();
+    if (!type || !location || !selectedSeverity) { 
+        alert('Please select issue type, location and severity.'); 
+        return; 
+    }
+    const now = new Date();
+    const timestamp = now.toISOString();
+    const newReport = { id: Date.now(), type, location, severity: selectedSeverity, descr, time: timestamp };
+    safetyReports.unshift(newReport);
+    clearSafetyForm();
+    refreshReports();
+    alert('Safety report submitted - thank you!');
+}
 
-        function resetSignal() {
-            const select = document.getElementById('intersectionSelect');
-            const selectedId = select.value;
-            if (selectedId) {
-                delete signalOverrides[selectedId];
-                alert(`Signal at ${selectedId} reset to automatic mode.`);
-                updateSignalStatus();
-            } else {
-                alert('Please select an intersection first.');
-            }
-        }
+function refreshReports() {
+    const container = document.getElementById('safetyReportsList');
+    container.innerHTML = '';
+    if (!safetyReports.length) { 
+        container.innerHTML = '<div style="color:#9aa6b3; padding:12px; text-align:center;">No reports yet</div>'; 
+        return; 
+    }
+    safetyReports.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'report-item';
+        const sevColor = r.severity === 'low' ? '#22c55e' : (r.severity === 'medium' ? '#f59e0b' : '#ef4444');
+        const timeStr = formatTimestamp(r.time);
+        item.innerHTML = `
+            <div class="report-severity-dot" style="background:${sevColor};"></div>
+            <div class="report-content">
+                <div class="report-title">${escapeHtml(r.type)} — ${escapeHtml(r.location)}</div>
+                <div class="report-description">${r.descr ? escapeHtml(r.descr) : '<em>No additional details provided</em>'}</div>
+                <div class="report-meta">${timeStr}</div>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
 
-        function emergencyOverride() {
-            alert('🚨 Activating system-wide emergency signal override. All intersections will turn red.');
-        }
+function formatTimestamp(iso) {
+    const d = new Date(iso);
+    const options = { year:'numeric', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' };
+    return `Reported on ${d.toLocaleString('en-IN', options)}`;
+}
 
-        function maintenanceMode() {
-            alert('🔧 Activating system-wide maintenance mode. All signals will be temporarily suspended.');
-        }
+function clearSafetyForm() {
+    document.getElementById('issueType').value = '';
+    document.getElementById('issueLocation').value = '';
+    document.getElementById('issueDescription').value = '';
+    selectedSeverity = null;
+    document.querySelectorAll('#sevLow,#sevMed,#sevHigh').forEach(b => b.classList.remove('selected','low','medium','high'));
+}
 
-        function populateIntersectionSelect() {
-            const select = document.getElementById('intersectionSelect');
-            intersectionData.forEach(intersection => {
-                const option = document.createElement('option');
-                option.value = intersection.id;
-                option.textContent = intersection.name;
-                select.appendChild(option);
-            });
-        }
+function escapeHtml(text) {
+    return (text || '').replace(/[&<>"'`]/g, function(m){ 
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[m]; 
+    });
+}
+
+/* ============================
+   Export CSV & reports
+   ============================ */
+function exportStats() {
+    const headers = ['id','name','lat','lng','avgWait','queue','status'];
+    const rows = intersections.map(i => headers.map(h=>String(i[h]||'')).map(v=>`"${v.replace(/"/g,'""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'intersection_stats.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function generateReport() {
+    reportsDailyChart.data.datasets[0].data = reportsDailyChart.data.datasets[0].data.map(v => Math.max(60, Math.round(v + (Math.random()-0.5)*6)));
+    reportsDailyChart.update();
+    reportsWeeklyChart.data.datasets[0].data = reportsWeeklyChart.data.datasets[0].data.map(v => Math.max(20, Math.round(v + (Math.random()-0.5)*2)));
+    reportsWeeklyChart.update();
+    alert('New report generated (demo).');
+}
+
+/* ============================
+   Helpers
+   ============================ */
+function timeAgo(iso) {
+    const s = Math.floor((Date.now() - new Date(iso))/1000);
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+    return `${Math.floor(s/86400)}d ago`;
+}
+
+/* ============================
+   Initialization
+   ============================ */
+window.addEventListener('load', () => {
+    // Show loading screen for 3.5 seconds, then fade out
+    setTimeout(() => {
+        const loadingScreen = document.getElementById('loadingScreen');
+        loadingScreen.classList.add('fade-out');
         
-        // Functions for map initialization and updates (re-added)
-        function initMaps() {
-            // Main map (Overview)
-            map = L.map('map').setView([20.2713, 85.8453], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+        // Remove loading screen from DOM after fade completes
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 800);
+    }, 5000);
 
-            // Detailed map (Traffic Map page)
-            mapDetailed = L.map('mapDetailed').setView([20.2713, 85.8453], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(mapDetailed);
+    initMaps();
+    initCharts();
+    populateIntersectionSelect();
+    updateIntersectionTable();
+    refreshMetricsFromIntersections();
+    renderAlerts();
+    refreshReports();
+
+    // clock
+    const el = document.getElementById('currentTime');
+    (function tick() {
+        const now = new Date();
+        el.innerText = now.toLocaleTimeString('en-IN', { hour12:true });
+        setTimeout(tick, 1000);
+    })();
+
+    // periodic demo updates
+    setInterval(()=> {
+        intersections.forEach(i => {
+            i.avgWait = Math.max(20, i.avgWait + Math.round((Math.random()-0.5)*10));
+            i.queue = Math.max(1, i.queue + Math.round((Math.random()-0.5)*4));
+            i.status = i.queue > 12 ? 'congested' : (i.queue > 8 ? 'moderate' : 'optimal');
+        });
+        drawIntersections(); updateIntersectionTable(); refreshMetricsFromIntersections();
+        if (waitingTimeChart) {
+            waitingTimeChart.data.datasets[0].data = waitingTimeChart.data.datasets[0].data.map(v => Math.max(30, Math.round(v + (Math.random()-0.5)*6)));
+            waitingTimeChart.update();
         }
+    }, 15000);
 
-        function updateMaps() {
-            // Clear existing markers
-            map.eachLayer(layer => {
-                if (layer instanceof L.Marker) {
-                    map.removeLayer(layer);
-                }
-            });
-            mapDetailed.eachLayer(layer => {
-                if (layer instanceof L.Marker) {
-                    mapDetailed.removeLayer(layer);
-                }
-            });
+    // ensure maps rendered properly on load
+    setTimeout(()=> { if (map) map.invalidateSize(); if (mapDetailed) mapDetailed.invalidateSize(); }, 400);
 
-            // Add new markers based on current data
-            intersectionData.forEach(intersection => {
-                const status = signalOverrides[intersection.id] || intersection.status;
-                let color;
-                if (status === 'optimal' || status === 'green') color = 'green';
-                else if (status === 'warning' || status === 'yellow') color = 'orange';
-                else color = 'red';
-
-                const markerHtml = `<div style="background-color: ${color}; width: 2rem; height: 2rem; display: block; left: -1rem; top: -1rem; position: relative; border-radius: 2rem 2rem 0; transform: rotate(45deg); border: 1px solid #FFFFFF"></div>`;
-                const customIcon = new L.DivIcon({
-                    className: 'my-custom-pin',
-                    iconAnchor: [0, 24],
-                    popupAnchor: [0, -36],
-                    html: markerHtml
-                });
-
-                const popupContent = `
-                    <b>${intersection.name}</b><br>
-                    Status: <span class="status-dot ${color}"></span> ${status}<br>
-                    Avg Wait Time: ${intersection.avgWaitTime}s<br>
-                    Queue Length: ${intersection.queueLength} cars
-                `;
-
-                L.marker(intersection.location, { icon: customIcon }).addTo(map).bindPopup(popupContent);
-                L.marker(intersection.location, { icon: customIcon }).addTo(mapDetailed).bindPopup(popupContent);
-            });
-        }
-        
-        // Functions for chart initialization and updates (re-added)
-        function createCharts() {
-            const commonChartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        ticks: { color: '#a0aec0' },
-                        grid: { color: '#2d3748' }
-                    },
-                    y: {
-                        ticks: { color: '#a0aec0' },
-                        grid: { color: '#2d3748' }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: { color: '#a0aec0' }
-                    }
-                }
-            };
-            
-            const waitingTimeCtx = document.getElementById('waitingTimeChart').getContext('2d');
-            chartInstances.waitingTime = new Chart(waitingTimeCtx, {
-                type: 'line',
-                data: {
-                    labels: ['9:00', '9:15', '9:30', '9:45', '10:00'],
-                    datasets: [{
-                        label: 'Avg Waiting Time (s)',
-                        data: [180, 210, 200, 190, 185],
-                        borderColor: '#4299e1',
-                        tension: 0.1
-                    }]
-                },
-                options: commonChartOptions
-            });
-
-            const queueLengthCtx = document.getElementById('queueLengthChart').getContext('2d');
-            chartInstances.queueLength = new Chart(queueLengthCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['East', 'West', 'North', 'South'],
-                    datasets: [{
-                        label: 'Queue Length',
-                        data: [25, 30, 20, 18],
-                        backgroundColor: '#63b3ed'
-                    }]
-                },
-                options: commonChartOptions
-            });
-
-            const trafficFlowCtx = document.getElementById('trafficFlowChart').getContext('2d');
-            chartInstances.trafficFlow = new Chart(trafficFlowCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Daily Vehicle Count (thousands)',
-                        data: [120, 150, 130, 145, 160, 110, 95],
-                        borderColor: '#48bb78',
-                        tension: 0.1
-                    }]
-                },
-                options: commonChartOptions
-            });
-
-            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
-            chartInstances.performance = new Chart(performanceCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Optimal', 'Warning', 'Congested'],
-                    datasets: [{
-                        data: [75, 15, 10],
-                        backgroundColor: ['#48bb78', '#ed8936', '#f56565']
-                    }]
-                },
-                options: commonChartOptions
-            });
-            
-            const dailySummaryCtx = document.getElementById('dailySummaryChart').getContext('2d');
-            chartInstances.dailySummary = new Chart(dailySummaryCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-                    datasets: [{
-                        label: 'Vehicle Count',
-                        data: [1500, 1750, 1600, 1900, 2100],
-                        backgroundColor: '#4299e1'
-                    }]
-                },
-                options: commonChartOptions
-            });
-
-            const weeklyChartCtx = document.getElementById('weeklyChart').getContext('2d');
-            chartInstances.weeklyChart = new Chart(weeklyChartCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [{
-                        label: 'Efficiency Score (%)',
-                        data: [85, 88, 86, 91],
-                        borderColor: '#48bb78',
-                        tension: 0.1
-                    }]
-                },
-                options: commonChartOptions
-            });
-        }
-
-        function updateCharts() {
-            // This function would be updated with real-time data
-            // For now, it's a placeholder.
-        }
-
-        function updateTable() {
-            const tableBody = document.getElementById('intersectionTableBody');
-            tableBody.innerHTML = '';
-            intersectionData.forEach(intersection => {
-                const statusClass = (signalOverrides[intersection.id] || intersection.status) === 'congested' || (signalOverrides[intersection.id] === 'red') ? 'red' : ((signalOverrides[intersection.id] || intersection.status) === 'warning' ? 'yellow' : 'green');
-                const row = `
-                    <tr>
-                        <td>${intersection.name}</td>
-                        <td><span class="status-dot ${statusClass}"></span> ${signalOverrides[intersection.id] || intersection.status}</td>
-                        <td>${intersection.avgWaitTime}s</td>
-                        <td>${intersection.queueLength} cars</td>
-                        <td>${(Math.random() * 10 + 85).toFixed(1)}%</td>
-                        <td>${new Date().toLocaleTimeString()}</td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-        }
-
-        function showPage(pageId, event) {
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
-            document.getElementById(pageId).classList.add('active');
-            
-            // Remove active class from all links and add to the clicked one
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            event.target.closest('.nav-link').classList.add('active');
-
-            // Resize maps and charts when shown
-            if (pageId === 'traffic-map') {
-                setTimeout(() => {
-                    if (mapDetailed) {
-                        mapDetailed.invalidateSize();
-                    }
-                }, 100);
-            } else if (pageId === 'overview') {
-                 setTimeout(() => {
-                    if (map) {
-                        map.invalidateSize();
-                    }
-                }, 100);
-            } else if (pageId === 'analytics' || pageId === 'reports') {
-                 setTimeout(() => {
-                    for (const chartId in chartInstances) {
-                        if (chartInstances[chartId]) {
-                            chartInstances[chartId].resize();
-                        }
-                    }
-                }, 100);
-            }
-        }
-
-        function switchUserType() {
-            const userType = document.getElementById('userType').value;
-            currentUserType = userType;
-            if (userType === 'citizen') {
-                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-            } else {
-                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'list-item');
-            }
-            showPage('overview', {target: document.querySelector('.nav-link.active')});
-        }
-        
-        function updateTime() {
-            document.getElementById('currentTime').textContent = new Date().toLocaleString();
-        }
-
-        function generateReport() {
-            alert('Generating a detailed traffic report...');
-        }
-        
-        // Initial setup
-        function init() {
-            updateTime();
-            setInterval(updateTime, 1000);
-            initMaps();
-            createCharts();
-            updateMaps();
-            updateTable();
-            populateIntersectionSelect();
-            switchUserType();
-        }
-
-        window.onload = init;
-    </script>
+    // default mode = admin, but let's check if we need to switch to citizen
+    const userType = document.getElementById('userType').value;
+    if (userType === 'citizen') {
+        switchUserType();
+    }
+});
+</script>
 </body>
 </html>
