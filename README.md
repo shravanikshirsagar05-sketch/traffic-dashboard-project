@@ -5,7 +5,7 @@ Learning project - building a responsive web dashboard
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>NiyantranaX - Odisha Traffic Management</title>
+<title>NiyantranaX - Traffic Management</title>
 
 <!-- Leaflet + Chart.js -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -332,21 +332,29 @@ Learning project - building a responsive web dashboard
         font-size: 12px;
     }
 
-    /* User type selector in top right */
+    /* User type selector in sidebar bottom */
     .user-type-selector {
-        position: fixed;
-        top: 20px;
-        right: 20px;
+        position: absolute;
+        bottom: 20px;
+        left: 14px;
+        right: 14px;
         z-index: 1300;
     }
     
     .user-select {
-        padding: 8px 12px;
-        border-radius: 6px;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
         border: 1px solid rgba(255,255,255,0.1);
-        background: #1a1f2e;
+        background: #0f1720;
         color: #e6eef8;
-        font-size: 13px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    .user-select:focus {
+        outline: none;
+        border-color: #2fb0ff;
     }
 
     /* small devices */
@@ -496,7 +504,7 @@ Learning project - building a responsive web dashboard
         <div class="nx-logo">NX</div>
     </div>
     <div class="loading-title">NiyantranaX</div>
-    <div class="loading-subtitle">Odisha Traffic Management</div>
+    <div class="loading-subtitle"> Traffic Management</div>
     <div class="loading-dots">
         <div class="dot"></div>
         <div class="dot"></div>
@@ -504,19 +512,11 @@ Learning project - building a responsive web dashboard
     </div>
 </div>
 
-<!-- User Type Selector -->
-<div class="user-type-selector">
-    <select id="userType" class="user-select" onchange="switchUserType()">
-        <option value="admin">Admin (RTO Controller)</option>
-        <option value="citizen">Citizen View</option>
-    </select>
-</div>
-
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <h2>NiyantranaX</h2>
-        <div class="subtitle">Odisha Traffic Management</div>
+        <div class="subtitle"> Traffic Management</div>
     </div>
     <ul class="nav-menu">
         <li class="nav-item">
@@ -557,6 +557,14 @@ Learning project - building a responsive web dashboard
             </a>
         </li>
     </ul>
+    
+    <!-- User Type Selector moved to sidebar bottom -->
+    <div class="user-type-selector">
+        <select id="userType" class="user-select" onchange="switchUserType()">
+            <option value="admin">Admin (RTO Controller)</option>
+            <option value="citizen">Citizen View</option>
+        </select>
+    </div>
 </div>
 
 <!-- Main content -->
@@ -1213,7 +1221,7 @@ window.addEventListener('load', () => {
         setTimeout(() => {
             loadingScreen.style.display = 'none';
         }, 800);
-    }, 5000);
+    }, 3500);
 
     initMaps();
     initCharts();
@@ -1257,3 +1265,4 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
+
