@@ -504,7 +504,7 @@ Learning project - building a responsive web dashboard
         <div class="nx-logo">NX</div>
     </div>
     <div class="loading-title">NiyantranaX</div>
-    <div class="loading-subtitle"> Traffic Management</div>
+    <div class="loading-subtitle">Traffic Management</div>
     <div class="loading-dots">
         <div class="dot"></div>
         <div class="dot"></div>
@@ -516,7 +516,7 @@ Learning project - building a responsive web dashboard
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <h2>NiyantranaX</h2>
-        <div class="subtitle"> Traffic Management</div>
+        <div class="subtitle">Traffic Management</div>
     </div>
     <ul class="nav-menu">
         <li class="nav-item">
@@ -590,7 +590,7 @@ Learning project - building a responsive web dashboard
             <div class="metric-card">
                 <div class="metric-title">Active Signals</div>
                 <div class="metric-value"><span id="activeSignals">--</span>/50</div>
-                <div style="color:#9aa6b3; font-size:13px; margin-top:6px;">2 signals in maintenance</div>
+                <div style="color:#9aa6b3; font-size:13px; margin-top:6px;" id="maintenanceText">All systems operational</div>
             </div>
             <div class="metric-card">
                 <div class="metric-title">Avg Wait Time</div>
@@ -600,7 +600,7 @@ Learning project - building a responsive web dashboard
             <div class="metric-card">
                 <div class="metric-title">System Status</div>
                 <div id="systemStatus" class="metric-value">--</div>
-                <div style="color:#9aa6b3; font-size:13px; margin-top:6px;">All systems operational</div>
+                <div style="color:#9aa6b3; font-size:13px; margin-top:6px;" id="systemStatusText">All systems operational</div>
             </div>
         </div>
 
@@ -1012,11 +1012,39 @@ function updateIntersectionTable() {
 }
 
 function refreshMetricsFromIntersections() {
-    const score = Math.round((intersections.reduce((acc,i)=>acc + (i.status==='optimal' ? 1 : (i.status==='moderate' ? 0.75 : 0.4)),0) / intersections.length)*100);
+    const score = Math.round((intersections.reduce((acc,i)=>acc + (i.status==='optimal' ? 1 : (i.status==='moderate' ? 0.75 : 0.4)),0) / intersections.length) * 10 + 10);
     document.getElementById('trafficEfficiency').innerText = `${score}%`;
-    document.getElementById('avgWaitTime').innerText = `${Math.round(intersections.reduce((s,i)=>s+i.avgWait,0)/intersections.length)} min`;
-    document.getElementById('activeSignals').innerText = `${50 - intersections.filter(i=>i.status==='congested').length}`;
-    document.getElementById('systemStatus').innerText = intersections.some(i=>i.status==='congested') ? 'Degraded' : 'Optimal';
+    document.getElementById('avgWaitTime').innerText = `${Math.round(intersections.reduce((s,i)=>s+i.avgWait,0)/intersections.length/60)} min`;
+    
+    const congestedCount = intersections.filter(i=>i.status==='congested').length;
+    const activeSignals = 50 - congestedCount;
+    
+    document.getElementById('activeSignals').innerText = `${activeSignals}`;
+    
+    // Update maintenance text based on congested signals
+    const maintenanceElement = document.getElementById('maintenanceText');
+    if (congestedCount === 0) {
+        maintenanceElement.innerText = 'All systems operational';
+        maintenanceElement.style.color = '#8ad9a6';
+    } else {
+        maintenanceElement.innerText = `${congestedCount} signal${congestedCount > 1 ? 's' : ''} in maintenance`;
+        maintenanceElement.style.color = '#9aa6b3';
+    }
+    
+    // Update system status and its subtitle text
+    const hasCongestion = intersections.some(i=>i.status==='congested');
+    const systemStatusElement = document.getElementById('systemStatus');
+    const systemStatusTextElement = document.getElementById('systemStatusText');
+    
+    if (hasCongestion) {
+        systemStatusElement.innerText = 'Degraded';
+        systemStatusTextElement.innerText = 'Traffic congestion detected';
+        systemStatusTextElement.style.color = '#ee8b34';
+    } else {
+        systemStatusElement.innerText = 'Optimal';
+        systemStatusTextElement.innerText = 'All systems operational';
+        systemStatusTextElement.style.color = '#8ad9a6';
+    }
 
     if (queueLengthChart) {
         queueLengthChart.data.datasets[0].data = intersections.map(i=>i.queue);
@@ -1265,4 +1293,3 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
-
