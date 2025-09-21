@@ -5,7 +5,7 @@ Learning project - building a responsive web dashboard
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>NiyantranaX - Traffic Management</title>
+<title>Chakravyuh - Traffic Management</title>
 
 <!-- Leaflet + Chart.js -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -401,9 +401,9 @@ Learning project - building a responsive web dashboard
         margin-bottom: 40px;
     }
 
-    .nx-logo {
+    .Chakravyuh-logo {
         font-family: 'Georgia', serif;
-        font-size: 180px;
+        font-size: 120px;
         font-weight: 900;
         color: #2fb0ff;
         text-shadow: 0 0 30px rgba(47, 176, 255, 0.5), 0 0 60px rgba(47, 176, 255, 0.3);
@@ -444,16 +444,6 @@ Learning project - building a responsive web dashboard
         to { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
     }
 
-    .loading-title {
-        font-size: 24px;
-        color: #9aa6b3;
-        font-weight: 600;
-        margin-top: 20px;
-        animation: titleSlide 1.5s ease-out 1s forwards;
-        opacity: 0;
-        transform: translateY(30px);
-    }
-
     @keyframes titleSlide {
         to {
             opacity: 1;
@@ -462,13 +452,13 @@ Learning project - building a responsive web dashboard
     }
 
     .loading-subtitle {
-        font-size: 14px;
-        color: #6b7280;
-        margin-top: 10px;
-        animation: titleSlide 1.5s ease-out 1.5s forwards;
-        opacity: 0;
-        transform: translateY(30px);
-    }
+    font-size: 16px;  
+    color: #9aa6b3;   
+    margin-top: 20px; 
+    animation: titleSlide 1.5s ease-out 1s forwards; 
+    opacity: 0;
+    transform: translateY(30px);
+}
 
     .loading-dots {
         margin-top: 30px;
@@ -501,10 +491,9 @@ Learning project - building a responsive web dashboard
 <div class="loading-screen" id="loadingScreen">
     <div class="logo-container">
         <div class="logo-glow"></div>
-        <div class="nx-logo">NX</div>
+        <div class="Chakravyuh-logo">Chakravyuh</div>
     </div>
-    <div class="loading-title">NiyantranaX</div>
-    <div class="loading-subtitle">Traffic Management</div>
+    <div class="loading-subtitle">Traffic Management System</div>
     <div class="loading-dots">
         <div class="dot"></div>
         <div class="dot"></div>
@@ -515,7 +504,7 @@ Learning project - building a responsive web dashboard
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <div class="logo">
-        <h2>NiyantranaX</h2>
+        <h2>Chakravyuh</h2>
         <div class="subtitle">Traffic Management</div>
     </div>
     <ul class="nav-menu">
@@ -1249,7 +1238,7 @@ window.addEventListener('load', () => {
         setTimeout(() => {
             loadingScreen.style.display = 'none';
         }, 800);
-    }, 3500);
+    }, 5000);
 
     initMaps();
     initCharts();
